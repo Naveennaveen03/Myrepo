@@ -52,7 +52,7 @@ const GroupSelector: React.FC<GroupSelectorProps> = ({
 
   const handleSaveEditGroup = () => {
     if (editGroupName !== null && newGroup) {
-      dispatch(editGroupAction({ oldGroup: editGroupName, newGroup }));
+      dispatch(editGroupAction({ groupName: editGroupName, newName: newGroup }));
       setSelectedGroups(selectedGroups.map((g) => (g === editGroupName ? newGroup : g)));
     }
     setEditGroupName(null);
@@ -60,7 +60,8 @@ const GroupSelector: React.FC<GroupSelectorProps> = ({
   };
 
   const handleAddGroup = () => {
-    if (newGroup && !groups.includes(newGroup)) {
+    console.log(newGroup && !groups.find(g => g.groupName !== newGroup), newGroup);
+    if (newGroup && !groups.find(g => g.groupName == newGroup)) {
       dispatch(addGroup(newGroup));
     }
     setNewGroup("");
@@ -104,18 +105,18 @@ const GroupSelector: React.FC<GroupSelectorProps> = ({
             <Button onClick={handleDone} color="success">Done</Button>
           </Box>
           {groups.map((group) => (
-            <MenuItem key={group} value={group}>
+            <MenuItem key={group.groupName} value={group.groupName}>
               <Checkbox
-                checked={selectedGroups.indexOf(group) > -1}
-                onClick={() => handleToggle(group)}
+                checked={selectedGroups.indexOf(group.groupName) > -1}
+                onClick={() => handleToggle(group.groupName)}
                 sx={{ color: "green", "&.Mui-checked": { color: "green" } }}
               />
-              <ListItemText primary={group} />
+              <ListItemText primary={group.groupName} />
               <ListItemSecondaryAction>
                 <IconButton
                   edge="end"
                   aria-label="edit"
-                  onClick={() => handleEditGroup(group)}
+                  onClick={() => handleEditGroup(group.groupName)}
                 >
                   <EditIcon />
                 </IconButton>

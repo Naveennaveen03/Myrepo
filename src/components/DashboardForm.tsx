@@ -8,19 +8,31 @@ import {
   DialogTitle,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
-import { addDashboard } from "../redux/dashboardSlice";
+import { addDashboard, updateDashboard, Dashboard } from "../redux/dashboardSlice";
 import GroupSelector from "./GroupSelector";
+import { v4 as uuidv4 } from 'uuid';
 
+interface DashboardInfo {
+  id: string;
+  title: string;
+  shortTitle: string;
+  description: string;
+  groups: string[];
+  embedLink: string;
+}
 interface DashboardFormProps {
   onClose: () => void;
+  initialValues: DashboardInfo;   
+  isEdit: boolean;
+  onSubmit: (dashboard: DashboardInfo) => void;
 }
 
-const DashboardForm: React.FC<DashboardFormProps> = ({ onClose }) => {
-  const [title, setTitle] = useState("");
-  const [shortTitle, setShortTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
-  const [embedLink, setEmbedLink] = useState("");
+const DashboardForm: React.FC<DashboardFormProps> = ({ onClose, initialValues, isEdit, onSubmit }) => {
+  const [title, setTitle] = useState(initialValues.title);
+  const [shortTitle, setShortTitle] = useState(initialValues.shortTitle);
+  const [description, setDescription] = useState(initialValues.description);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>(initialValues.groups);
+  const [embedLink, setEmbedLink] = useState(initialValues.embedLink);
   const [groupSelectionText, setGroupSelectionText] = useState("Select...");
   const dispatch = useDispatch();
 
@@ -29,14 +41,22 @@ const DashboardForm: React.FC<DashboardFormProps> = ({ onClose }) => {
   };
 
   const handleSubmit = () => {
-    const newDashboard = {
+    const newDashboard: DashboardInfo = {
+      id: initialValues.id || uuidv4(),
       title,
       shortTitle,
       description,
       groups: selectedGroups,
       embedLink,
     };
-    dispatch(addDashboard(newDashboard));
+
+    if (isEdit) {
+      dispatch(updateDashboard({ id: newDashboard.id, updatedDashboard: newDashboard }));
+    } else {
+      dispatch(addDashboard({ groups: selectedGroups, dashboard: newDashboard }));
+    }
+
+    onSubmit(newDashboard);
     setTitle("");
     setShortTitle("");
     setDescription("");
@@ -48,12 +68,12 @@ const DashboardForm: React.FC<DashboardFormProps> = ({ onClose }) => {
 
   return (
     <Dialog open onClose={onClose}>
-      <DialogTitle>Add Dashboard</DialogTitle>
+      <DialogTitle>{isEdit ? 'Edit Dashboard' : 'Add Dashboard'}</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
           margin="dense"
-          label="Title input field"
+          label="Title"
           type="text"
           fullWidth
           value={title}
@@ -67,7 +87,7 @@ const DashboardForm: React.FC<DashboardFormProps> = ({ onClose }) => {
         />
         <TextField
           margin="dense"
-          label="Short Title input filed"
+          label="Short Title"
           type="text"
           fullWidth
           value={shortTitle}
@@ -99,7 +119,6 @@ const DashboardForm: React.FC<DashboardFormProps> = ({ onClose }) => {
           groupSelectionText={groupSelectionText}
           setGroupSelectionText={setGroupSelectionText}
           onDone={handleGroupSelectionDone}
-          
         />
         <TextField
           margin="dense"

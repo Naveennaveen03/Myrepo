@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface Dashboard {
+  id: string;
   title: string;
   shortTitle: string;
   description: string;
@@ -8,71 +9,106 @@ export interface Dashboard {
   embedLink: string;
 }
 
-interface DashboardState {
+interface Group {
+  groupName: string;
   dashboards: Dashboard[];
-  groups: string[];
+}
+
+interface DashboardState {
+  groups: Group[];
 }
 
 const initialState: DashboardState = {
-  dashboards: [],
-  groups: ['Group A', 'Group B', 'Group C', 'Group D'],
+  groups: [
+    { groupName: 'Group A', dashboards: [] },
+    { groupName: 'Group B', dashboards: [] },
+    { groupName: 'Group C', dashboards: [] },
+    { groupName: 'Group D', dashboards: [] },
+  ],
 };
 
 const dashboardSlice = createSlice({
   name: 'dashboards',
   initialState,
   reducers: {
-    addDashboard(state, action: PayloadAction<Dashboard>) {
-      state.dashboards.push(action.payload);
+    addDashboard(
+      state,
+      action: PayloadAction<{ groups: string[]; dashboard: Dashboard }>
+    ) {
+      const { groups, dashboard } = action.payload;
+      state.groups = state.groups.map((group) => {
+        if (groups.includes(group.groupName)) {
+          group.dashboards.push(dashboard);
+        }
+        return group;
+      });
     },
-    updateDashboard(state, action: PayloadAction<{ index: number; dashboard: Dashboard }>) {
-      state.dashboards[action.payload.index] = action.payload.dashboard;
+    updateDashboard(
+      state,
+      action: PayloadAction<{ id: string; updatedDashboard: Dashboard }>
+    ) {
+      const { id, updatedDashboard } = action.payload;
+      state.groups = state.groups.map((group) => {
+        group.dashboards = group.dashboards.map((dashboard) =>
+          dashboard.id === id ? updatedDashboard : dashboard
+        );
+        return group;
+      });
     },
-    removeDashboard(state, action: PayloadAction<number>) {
-      state.dashboards.splice(action.payload, 1);
+    removeDashboard(state, action: PayloadAction<string>) {
+      const dashboardId = action.payload;
+      state.groups = state.groups.map((group) => {
+        group.dashboards = group.dashboards.filter(
+          (dashboard) => dashboard.id !== dashboardId
+        );
+        return group;
+      });
     },
     addGroup(state, action: PayloadAction<string>) {
-      if (!state.groups.includes(action.payload)) {
-        state.groups.push(action.payload);
-      }
+      state.groups.push({ groupName: action.payload, dashboards: [] });
     },
     editGroup(
       state,
-      action: PayloadAction<{ oldGroup: string; newGroup: string }>
+      action: PayloadAction<{ groupName: string; newName: string }>
     ) {
-      const { oldGroup, newGroup } = action.payload;
-      const groupIndex = state.groups.indexOf(oldGroup);
-      if (groupIndex !== -1) {
-        state.groups[groupIndex] = newGroup;
-      }
-      state.dashboards.forEach((dashboard) => {
-        const groupIdx = dashboard.groups.indexOf(oldGroup);
-        if (groupIdx !== -1) {
-          dashboard.groups[groupIdx] = newGroup;
+      const { groupName, newName } = action.payload;
+      state.groups = state.groups.map((group) =>
+        group.groupName === groupName
+          ? { ...group, groupName: newName }
+          : group
+      );
+    },
+    deleteGroup(state, action: PayloadAction<string>) {
+      const groupName = action.payload;
+      state.groups = state.groups.filter((group) => group.groupName !== groupName);
+    },
+    reorderGroups(state, action: PayloadAction<Group[]>) {
+      state.groups = action.payload;
+    },
+    updateGroupDashboards(
+      state,
+      action: PayloadAction<{ groupName: string; dashboards: Dashboard[] }>
+    ) {
+      const { groupName, dashboards } = action.payload;
+      state.groups = state.groups.map((group) => {
+        if (group.groupName === groupName) {
+          group.dashboards = dashboards;
         }
+        return group;
       });
     },
-  updateGroupDashboards(
-    state,
-    action: PayloadAction<{ group: string; dashboards: Dashboard[] }>
-  ) {
-    const { group, dashboards } = action.payload;
-  
-    state.dashboards = state.dashboards.map((dashboard) => {
-      if (dashboard.groups.includes(group)) {
-        // Replace the specific dashboard for this group
-        const updatedDashboard = dashboards.find(
-          (d) => d.title === dashboard.title && d.groups.includes(group)
-        );
-        return updatedDashboard || dashboard;
-      }
-      return dashboard;
-    });
-  }
-  
   },
 });
 
-export const { addDashboard, updateDashboard, removeDashboard, addGroup, editGroup,updateGroupDashboards } = dashboardSlice.actions;
+export const {
+  addDashboard,
+  updateDashboard,
+  removeDashboard,
+  addGroup,
+  editGroup,
+  deleteGroup,
+  reorderGroups,
+  updateGroupDashboards
+} = dashboardSlice.actions;
 
 export default dashboardSlice.reducer;
